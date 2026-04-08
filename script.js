@@ -1,4 +1,4 @@
-﻿// ===================================================
+// ===================================================
 // جِسر - تطبيق لغة الإشارة العربية المتقدم
 // نسخة شاملة: تعلم + تواصل + تحدي + إحصائيات
 // ===================================================
@@ -323,10 +323,14 @@ let previousSpecialState = 'other';
 let lastSpecialGestureAt = 0;
 let specialGestureLockUntil = 0;
 
+function isPinchGesture(lm) {
+    // طرف السبابة (8) يلمس طرف الإبهام (4) بمسافة أقل من 0.06
+    const d_ti = dist(lm[4], lm[8]);
+    return d_ti < 0.06;
+}
+
 function getSpecialGestureState(lm) {
-    const n = countTotal(getFingers(lm));
-    if (n === 5) return 'open';
-    if (n === 0) return 'fist';
+    if (isPinchGesture(lm)) return 'pinch';
     return 'other';
 }
 
@@ -375,14 +379,10 @@ function detectSpecialGestures(lm) {
         return;
     }
 
-    if (previousSpecialState === 'open' && currentState === 'fist') {
+    if (previousSpecialState === 'other' && currentState === 'pinch') {
         lastSpecialGestureAt = now;
         specialGestureLockUntil = now + SPECIAL_GESTURE_LOCK_MS;
         triggerSpaceGesture();
-    } else if (previousSpecialState === 'fist' && currentState === 'open') {
-        lastSpecialGestureAt = now;
-        specialGestureLockUntil = now + SPECIAL_GESTURE_LOCK_MS;
-        triggerDeleteGesture();
     }
 
     previousSpecialState = currentState;
@@ -412,7 +412,7 @@ function onResults(results) {
         if (isTargetModeActive() && getCurrentTargetChar() === ' ') {
             resetDetection();
             showCurrentLetter('⎵');
-            setStatus('active', 'المطلوب الآن مسافة: ✋→✊');
+            setStatus('active', 'المطلوب الآن مسافة: وصّل طرف السبابة بالإبهام 🤌');
             ctx.restore();
             return;
         }
@@ -639,7 +639,7 @@ function renderTargetHint() {
     if (expected === ' ') {
         letterEl.textContent = '⎵';
         visualEl.innerHTML = '';
-        textEl.textContent = 'المطلوب الآن مسافة. نفّذ الحركة: ✋ ثم ✊.';
+        textEl.textContent = 'المطلوب الآن مسافة. نفّذ حركة Pinch: وصّل طرف السبابة بطرف الإبهام 🤌';
         card.classList.remove('hidden');
         return;
     }
@@ -783,7 +783,7 @@ function handleCommunicateDetection(letter) {
 
     if (expected === ' ') {
         handleTargetMismatch(letter);
-        setTargetStatus('المطلوب الآن مسافة بالحركة: ✋ ثم ✊.', 'error');
+        setTargetStatus('المطلوب الآن مسافة بحركة Pinch: وصّل السبابة بالإبهام 🤌', 'error');
         return;
     }
 
@@ -1207,6 +1207,3 @@ window.addEventListener('load', () => {
     }
     console.log('🤟 جِسر جاهز - النسخة المتقدمة');
 });
-
-
-
